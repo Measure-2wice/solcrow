@@ -2,7 +2,7 @@
 
 use anchor_litesvm::{AnchorLiteSVM, Signer};
 use litesvm_utils::{AssertionHelpers, TestHelpers};
-use anchor_lang::system_program;
+use anchor_lang::{self, system_program};
 use spl_associated_token_account::get_associated_token_address;
 use spl_token;
 
