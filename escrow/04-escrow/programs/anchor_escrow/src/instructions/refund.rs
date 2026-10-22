@@ -19,16 +19,16 @@ pub struct Refund<'info> {
         seeds = [b"escrow", maker.key().as_ref(), escrow.seed.to_le_bytes().as_ref()],
         bump = escrow.bump,
         has_one = maker @ EscrowError::InvalidMaker,
-        has_one = mint_a @ EscrowError::InvalidMintA,
+        has_one = mint @ EscrowError::InvalidMint,
     )]
     pub escrow: Box<Account<'info, Escrow>>,
 
     #[account(mint::token_program = token_program)]
-    pub mint_a: Box<InterfaceAccount<'info, Mint>>,
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         mut,
-        associated_token::mint = mint_a,
+        associated_token::mint = mint,
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
@@ -37,11 +37,11 @@ pub struct Refund<'info> {
     #[account(
         init_if_needed,
         payer = maker,
-        associated_token::mint = mint_a,
+        associated_token::mint = mint,
         associated_token::authority = maker,
         associated_token::token_program = token_program
     )]
-    pub maker_ata_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub maker_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub associated_token_program: Program<'info, AssociatedToken>,
 
@@ -64,14 +64,14 @@ impl<'info> Refund<'info> {
                 self.token_program.key(),
                 TransferChecked {
                     from: self.vault.to_account_info(),
-                    to: self.maker_ata_a.to_account_info(),
-                    mint: self.mint_a.to_account_info(),
+                    to: self.maker_ata.to_account_info(),
+                    mint: self.mint.to_account_info(),
                     authority: self.escrow.to_account_info(),
                 },
                 &signer_seeds,
             ),
             self.vault.amount,
-            self.mint_a.decimals,
+            self.mint.decimals,
         )?;
 
         close_account(CpiContext::new_with_signer(

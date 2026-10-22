@@ -59,13 +59,10 @@ export type AnchorEscrow = {
           }
         },
         {
-          "name": "mintA"
+          "name": "mint"
         },
         {
-          "name": "mintB"
-        },
-        {
-          "name": "makerAtaA",
+          "name": "makerAta",
           "writable": true,
           "pda": {
             "seeds": [
@@ -79,7 +76,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
+                "path": "mint"
               }
             ],
             "program": {
@@ -136,7 +133,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
+                "path": "mint"
               }
             ],
             "program": {
@@ -196,10 +193,6 @@ export type AnchorEscrow = {
           "type": "u64"
         },
         {
-          "name": "receive",
-          "type": "u64"
-        },
-        {
           "name": "amount",
           "type": "u64"
         }
@@ -255,7 +248,7 @@ export type AnchorEscrow = {
           }
         },
         {
-          "name": "mintA",
+          "name": "mint",
           "relations": [
             "escrow"
           ]
@@ -275,7 +268,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
+                "path": "mint"
               }
             ],
             "program": {
@@ -318,7 +311,7 @@ export type AnchorEscrow = {
           }
         },
         {
-          "name": "makerAtaA",
+          "name": "makerAta",
           "writable": true,
           "pda": {
             "seeds": [
@@ -332,7 +325,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
+                "path": "mint"
               }
             ],
             "program": {
@@ -442,13 +435,7 @@ export type AnchorEscrow = {
           }
         },
         {
-          "name": "mintA",
-          "relations": [
-            "escrow"
-          ]
-        },
-        {
-          "name": "mintB",
+          "name": "mint",
           "relations": [
             "escrow"
           ]
@@ -468,7 +455,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
+                "path": "mint"
               }
             ],
             "program": {
@@ -511,7 +498,7 @@ export type AnchorEscrow = {
           }
         },
         {
-          "name": "takerAtaA",
+          "name": "takerAta",
           "writable": true,
           "pda": {
             "seeds": [
@@ -525,121 +512,7 @@ export type AnchorEscrow = {
               },
               {
                 "kind": "account",
-                "path": "mintA"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "takerAtaB",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "taker"
-              },
-              {
-                "kind": "account",
-                "path": "tokenProgram"
-              },
-              {
-                "kind": "account",
-                "path": "mintB"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "makerAtaB",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "maker"
-              },
-              {
-                "kind": "account",
-                "path": "tokenProgram"
-              },
-              {
-                "kind": "account",
-                "path": "mintB"
+                "path": "mint"
               }
             ],
             "program": {
@@ -717,13 +590,8 @@ export type AnchorEscrow = {
     },
     {
       "code": 6002,
-      "name": "invalidMintA",
-      "msg": "Invalid mint a"
-    },
-    {
-      "code": 6003,
-      "name": "invalidMintB",
-      "msg": "Invalid mint b"
+      "name": "invalidMint",
+      "msg": "Invalid mint"
     }
   ],
   "types": [
@@ -741,15 +609,11 @@ export type AnchorEscrow = {
             "type": "pubkey"
           },
           {
-            "name": "mintA",
+            "name": "mint",
             "type": "pubkey"
           },
           {
-            "name": "mintB",
-            "type": "pubkey"
-          },
-          {
-            "name": "receive",
+            "name": "amount",
             "type": "u64"
           },
           {

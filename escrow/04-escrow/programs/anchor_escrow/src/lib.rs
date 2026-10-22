@@ -11,8 +11,8 @@ declare_id!("6Tzw6AqynRChZEHtJfhmJHpgSfceSMGn6sUkMjkEctii");
 #[program]
 pub mod anchor_escrow {
     use super::*;
-    pub fn make(ctx: Context<Make>, seed: u64, receive: u64, amount: u64) -> Result<()> {
-        instructions::make::handler(ctx, seed, receive, amount)
+    pub fn make(ctx: Context<Make>, seed: u64, amount: u64) -> Result<()> {
+        instructions::make::handler(ctx, seed, amount)
     }
     pub fn take(ctx: Context<Take>) -> Result<()> {
         instructions::take::handler(ctx)
