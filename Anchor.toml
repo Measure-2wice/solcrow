@@ -11,7 +11,7 @@ idls = "idls"
 types = "types"
 
 [programs.localnet]
-anchor_escrow = "6Tzw6AqynRChZEHtJfhmJHpgSfceSMGn6sUkMjkEctii"
+anchor_escrow = "38es8xcEeKMcwoGjG8iapa5JN7rs9zCCGKLRtUo9uKmS"
 
 [provider]
 cluster = "localnet"
