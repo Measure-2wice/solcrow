@@ -1,0 +1,17 @@
+{
+  "name": "anchor-escrow-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20.18"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.99.0",
+    "express": "^5.1.0"
+  }
+}

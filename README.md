@@ -49,6 +49,41 @@ anchor build
 anchor test
 ```
 
+## JavaScript API service
+
+The Node.js service exposes escrow reads and transaction-building endpoints. It derives
+the program accounts from the escrow IDL and supports both SPL Token and Token-2022 mints.
+It never stores wallet keys or submits transactions: transaction endpoints return a
+base64-encoded, unsigned legacy transaction for the caller's wallet to review, sign, and
+submit.
+
+```bash
+yarn install
+SOLANA_RPC_URL=http://127.0.0.1:8899 yarn start
+```
+
+Set `SOLANA_RPC_URL` explicitly to the intended cluster. The service listens on port
+`3000` by default; set `PORT` to change it.
+
+| Method | Path | Request |
+|--------|------|---------|
+| `GET` | `/health` | — |
+| `GET` | `/escrows/:maker/:seed` | — |
+| `POST` | `/escrows/make/transaction` | `{ "maker": "<pubkey>", "mint": "<pubkey>", "seed": "42", "amount": "1000000" }` |
+| `POST` | `/escrows/take/transaction` | `{ "maker": "<pubkey>", "taker": "<pubkey>", "seed": "42" }` |
+| `POST` | `/escrows/refund/transaction` | `{ "maker": "<pubkey>", "seed": "42" }` |
+
+Amounts and seeds are raw integer token units and should be sent as decimal strings to
+preserve the full `u64` range. The transaction response contains `transaction` (base64),
+`blockhash`, `lastValidBlockHeight`, and `transactionVersion`. The maker/taker named in
+the request must sign with their wallet; the service only builds the transaction.
+
+Run the JavaScript service tests with:
+
+```bash
+yarn test
+```
+
 ## Instructions
 
 ### `make`
