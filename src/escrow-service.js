@@ -1,5 +1,11 @@
 import { readFileSync } from "node:fs";
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { getProgramDerivedAddress } from "@solana/addresses";
+import * as kit from "@solana/kit";
+import { address } from "@solana/kit";
+import * as kitAddresses from "@solana/addresses";
+import * as kitKeys from "@solana/keys";
+import { createSolanaRpc } from "@solana/rpc";
 
 // Patch Transaction.from to normalize instruction data to Buffer
 if (Transaction && typeof Transaction.from === "function") {
@@ -159,6 +165,25 @@ getProgramDerivedAddress({programAddress:${JSON.stringify(programAddress)},seeds
   } catch (e) {
     // fall through
   }
+  try {
+    const script2 = `
+import('@solana/addresses').then(async m => {
+  const {getProgramDerivedAddress}=m;
+  const seeds=${JSON.stringify(seedBuffers.map(b=>Array.from(b)))};
+  const sb = seeds.map(a=>new Uint8Array(a));
+  const r = await getProgramDerivedAddress({programAddress:${JSON.stringify(programAddress)},seeds:sb});
+  process.stdout.write(r[0]+'|'+r[1]);
+}).catch(()=>process.exit(1));
+`;
+    const out = execFileSync(process.execPath, ["--input-type=module", "-e", script2], { encoding: "utf8" });
+    const line = out.trim();
+    if (line.includes("|")) {
+      const [addr, bump] = line.split("|");
+      return [new PublicKey(addr), parseInt(bump)];
+    }
+  } catch (e) {
+    // fall through
+  }
   throw new Error("Unable to find a viable program address");
 }
 
@@ -217,6 +242,8 @@ export class EscrowService {
     }
     this.connection = connection;
     this.programId = new PublicKey(idl.address);
+    // Support Kit RPC if available
+    this.kitRpc = typeof globalThis !== "undefined" ? globalThis.__solanaKitRpc : undefined;
   }
 
   async #mintTokenProgram(mint) {
@@ -275,7 +302,7 @@ export class EscrowService {
     return {
       transaction: buffer.toString("base64"),
       blockhash: blockhash.blockhash,
-      lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      lastValidBlockHeight: Number(blockhash.lastValidBlockHeight),
       transactionVersion: "legacy",
     };
   }

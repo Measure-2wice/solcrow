@@ -2,6 +2,7 @@
 /node_modules
 /.pnp
 .pnp.js
+/yarn.lock
 
 # Testing
 /coverage
@@ -25,7 +26,6 @@
 # Keypairs
 *.json
 !package.json
-!package-lock.json
 !tsconfig.json
 
 # Misc

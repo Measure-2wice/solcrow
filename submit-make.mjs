@@ -2,11 +2,12 @@
 import { readFileSync } from "node:fs";
 import { Connection, Keypair, Transaction } from "@solana/web3.js";
 
-const response = JSON.parse(readFileSync("make-response.json", "utf8"));
+const responseFile = process.argv[2] ?? "make-response.json";
+const response = JSON.parse(readFileSync(responseFile, "utf8"));
 const secret = Uint8Array.from(
   JSON.parse(readFileSync(`${process.env.HOME}/.config/solana/id.json`, "utf8")),
 );
-const maker = Keypair.fromSecretKey(secret);
+const maker = await Keypair.fromSecretKey(secret);
 
 if (maker.publicKey.toBase58() !== "4SusPAMEFc2Dom75zPqzNhf3XAQYeJCYXw1Fd1TMENkK") {
   throw new Error("Configured keypair is not the requested maker");
@@ -27,12 +28,12 @@ if (simulation.value.err) {
   throw new Error(JSON.stringify({
     error: simulation.value.err,
     logs: simulation.value.logs,
-  }));
+  }, (k,v)=>typeof v==='bigint'?v.toString():v));
 }
 
-transaction.sign(maker);
+await transaction.sign(maker);
 
-const signature = await connection.sendRawTransaction(transaction.serialize());
+const signature = await connection.sendRawTransaction(await transaction.serialize());
 const confirmation = await connection.confirmTransaction({
   signature,
   blockhash: latest.blockhash,

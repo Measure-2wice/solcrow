@@ -4,6 +4,8 @@ import { once } from "node:events";
 import test from "node:test";
 import { createServer } from "node:http";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import * as kit from "@solana/kit";
+import { address } from "@solana/kit";
 import { createApp } from "../src/app.js";
 import {
   deriveAssociatedTokenAddress,
@@ -19,6 +21,9 @@ const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 const programId = new PublicKey("38es8xcEeKMcwoGjG8iapa5JN7rs9zCCGKLRtUo9uKmS");
 const idl = JSON.parse(readFileSync(new URL("../idls/anchor_escrow.json", import.meta.url), "utf8"));
 const blockhash = PublicKey.default.toBase58();
+// Kit-compatible addresses
+const makerAddress = address(maker.toBase58());
+const mintAddress = address(mint.toBase58());
 
 test("parseU64 accepts decimal strings without unsafe number coercion", () => {
   assert.equal(parseU64("18446744073709551615", "seed"), 18446744073709551615n);
