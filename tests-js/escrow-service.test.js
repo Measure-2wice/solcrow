@@ -78,16 +78,17 @@ test("service builds unsigned make, take, and refund transactions from escrow st
     seed: "7",
     amount: "1000000",
   });
-  const makeTransaction = Transaction.from(Buffer.from(make.transaction, "base64"));
+  let makeTransaction = Transaction.from(Buffer.from(make.transaction, "base64"));
+  const makeData = Buffer.isBuffer(makeTransaction.instructions[0].data) ? makeTransaction.instructions[0].data : Buffer.from(makeTransaction.instructions[0].data);
   assert.equal(make.transactionVersion, "legacy");
   assert.equal(make.lastValidBlockHeight, 999);
   assert.equal(makeTransaction.feePayer.toBase58(), maker.toBase58());
   assert.deepEqual(
-    [...makeTransaction.instructions[0].data.subarray(0, 8)],
+    [...makeData.subarray(0, 8)],
     idl.instructions.find(({ name }) => name === "make").discriminator,
   );
-  assert.equal(makeTransaction.instructions[0].data.readBigUInt64LE(8), 7n);
-  assert.equal(makeTransaction.instructions[0].data.readBigUInt64LE(16), 1_000_000n);
+  assert.equal(makeData.readBigUInt64LE(8), 7n);
+  assert.equal(makeData.readBigUInt64LE(16), 1_000_000n);
   assert.equal(makeTransaction.instructions[0].keys.length, 8);
 
   const take = await service.buildTakeTransaction({
@@ -95,10 +96,11 @@ test("service builds unsigned make, take, and refund transactions from escrow st
     taker: maker.toBase58(),
     seed: seed.toString(),
   });
-  const takeTransaction = Transaction.from(Buffer.from(take.transaction, "base64"));
+  let takeTransaction = Transaction.from(Buffer.from(take.transaction, "base64"));
+  const takeData = Buffer.isBuffer(takeTransaction.instructions[0].data) ? takeTransaction.instructions[0].data : Buffer.from(takeTransaction.instructions[0].data);
   assert.equal(takeTransaction.instructions[0].keys.length, 9);
   assert.deepEqual(
-    [...takeTransaction.instructions[0].data],
+    [...takeData],
     idl.instructions.find(({ name }) => name === "take").discriminator,
   );
 
@@ -106,10 +108,11 @@ test("service builds unsigned make, take, and refund transactions from escrow st
     maker: maker.toBase58(),
     seed: seed.toString(),
   });
-  const refundTransaction = Transaction.from(Buffer.from(refund.transaction, "base64"));
+  let refundTransaction = Transaction.from(Buffer.from(refund.transaction, "base64"));
+  const refundData = Buffer.isBuffer(refundTransaction.instructions[0].data) ? refundTransaction.instructions[0].data : Buffer.from(refundTransaction.instructions[0].data);
   assert.equal(refundTransaction.instructions[0].keys.length, 8);
   assert.deepEqual(
-    [...refundTransaction.instructions[0].data],
+    [...refundData],
     idl.instructions.find(({ name }) => name === "refund").discriminator,
   );
 

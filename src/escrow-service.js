@@ -1,6 +1,38 @@
 import { readFileSync } from "node:fs";
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 
+// Patch Transaction.from to normalize instruction data to Buffer
+if (Transaction && typeof Transaction.from === "function") {
+  const origFrom = Transaction.from;
+  Transaction.from = function (buffer) {
+    const tx = origFrom.call(this, buffer);
+    if (tx && Array.isArray(tx.instructions)) {
+      for (const ix of tx.instructions) {
+        if (ix && ix.data && !(Buffer.isBuffer(ix.data))) {
+          try {
+            ix.data = Buffer.from(ix.data);
+          } catch {}
+        }
+      }
+    }
+    return tx;
+  };
+}
+
+if (typeof PublicKey !== "undefined" && PublicKey.prototype) {
+  if (typeof PublicKey.prototype.toBuffer !== "function" && typeof PublicKey.prototype.toBytes === "function") {
+    PublicKey.prototype.toBuffer = function () {
+      return Buffer.from(this.toBytes());
+    };
+  }
+  if (typeof PublicKey.prototype.toBytes !== "function" && typeof PublicKey.prototype.toBuffer === "function") {
+    PublicKey.prototype.toBytes = function () {
+      const buf = this.toBuffer();
+      return new Uint8Array(buf);
+    };
+  }
+}
+
 const idl = JSON.parse(readFileSync(new URL("../idls/anchor_escrow.json", import.meta.url), "utf8"));
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
@@ -42,26 +74,114 @@ function publicKey(value, fieldName) {
     throw new HttpError(400, `${fieldName} must be a base58 public key`);
   }
   try {
-    return new PublicKey(value);
+    const pk = new PublicKey(value);
+    if (typeof pk.toBuffer !== "function" && typeof pk.toBytes === "function") {
+      pk.toBuffer = function () {
+        const bytes = this.toBytes();
+        return Buffer.from(bytes);
+      };
+    }
+    return pk;
   } catch {
     throw new HttpError(400, `${fieldName} must be a valid base58 public key`);
   }
 }
 
+function toBytes(pubkey) {
+  if (typeof pubkey?.toBytes === "function") {
+    return pubkey.toBytes();
+  }
+  if (typeof pubkey?.toBuffer === "function") {
+    return pubkey.toBuffer();
+  }
+  return Buffer.from(pubkey);
+}
+
+function findProgramAddressSync(seeds, programId) {
+  if (typeof PublicKey.findProgramAddressSync === "function") {
+    return PublicKey.findProgramAddressSync(seeds, programId);
+  }
+  if (typeof PublicKey.createProgramAddressSync === "function") {
+    for (let bump = 255; bump >= 0; bump -= 1) {
+      try {
+        const address = PublicKey.createProgramAddressSync([...seeds, Buffer.from([bump])], programId);
+        return [address, bump];
+      } catch {
+        // try next bump
+      }
+    }
+    throw new Error("Unable to find a viable program address");
+  }
+  throw new Error("No PDA derivation method available");
+}
+
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { execFileSync } = require("node:child_process");
+
+function computeProgramAddressSync(seeds, programId) {
+  if (typeof PublicKey.findProgramAddressSync === "function") {
+    return PublicKey.findProgramAddressSync(seeds, programId);
+  }
+  if (typeof PublicKey.createProgramAddressSync === "function") {
+    for (let bump = 255; bump >= 0; bump -= 1) {
+      try {
+        const address = PublicKey.createProgramAddressSync([...seeds, Buffer.from([bump])], programId);
+        return [address, bump];
+      } catch {
+        // try next bump
+      }
+    }
+    throw new Error("Unable to find a viable program address");
+  }
+  const seedBuffers = seeds.map((s) => (Buffer.isBuffer(s) ? s : Buffer.from(s)));
+  const programAddress = typeof programId === "string" ? programId : (programId.toBase58 ? programId.toBase58() : new PublicKey(programId).toBase58());
+  try {
+    // Use sync exec to call async function
+    const { execFileSync } = require("node:child_process");
+    const script = `
+const {getProgramDerivedAddress}=require('@solana/addresses');
+const {PublicKey}=require('@solana/web3.js');
+const seeds=${JSON.stringify(seedBuffers.map(b=>Array.from(b)))};
+const sb = seeds.map(a=>Buffer.from(a));
+getProgramDerivedAddress({programAddress:${JSON.stringify(programAddress)},seeds:sb}).then(r=>{
+  process.stdout.write(r[0]+'|'+r[1]);
+}).catch(e=>{
+  process.exit(1);
+});
+`;
+    const out = execFileSync(process.execPath, ["-e", script], { encoding: "utf8" });
+    const line = out.trim();
+    if (line.includes("|")) {
+      const [addr, bump] = line.split("|");
+      return [new PublicKey(addr), parseInt(bump)];
+    }
+  } catch (e) {
+    // fall through
+  }
+  throw new Error("Unable to find a viable program address");
+}
+
 export function deriveEscrowAddress(maker, seed, programId = new PublicKey(idl.address)) {
   const seedBytes = Buffer.alloc(8);
   seedBytes.writeBigUInt64LE(parseU64(seed, "seed"));
-  return PublicKey.findProgramAddressSync(
-    [Buffer.from("escrow"), maker.toBuffer(), seedBytes],
-    programId,
-  )[0];
+  try {
+    const [address] = computeProgramAddressSync(
+      [Buffer.from("escrow"), Buffer.from(toBytes(maker)), seedBytes],
+      programId,
+    );
+    return address;
+  } catch (err) {
+    throw err;
+  }
 }
 
 export function deriveAssociatedTokenAddress(owner, mint, tokenProgramId) {
-  return PublicKey.findProgramAddressSync(
-    [owner.toBuffer(), tokenProgramId.toBuffer(), mint.toBuffer()],
+  const [address] = computeProgramAddressSync(
+    [Buffer.from(toBytes(owner)), Buffer.from(toBytes(tokenProgramId)), Buffer.from(toBytes(mint))],
     ASSOCIATED_TOKEN_PROGRAM_ID,
-  )[0];
+  );
+  return address;
 }
 
 function instructionDiscriminator(name) {
@@ -142,16 +262,18 @@ export class EscrowService {
     };
   }
 
-  #unsignedTransaction(instruction, feePayer, blockhash) {
+  async #unsignedTransaction(instruction, feePayer, blockhash) {
     const transaction = new Transaction({
       feePayer,
       recentBlockhash: blockhash.blockhash,
     }).add(instruction);
+    const serialized = await transaction.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+    });
+    const buffer = Buffer.isBuffer(serialized) ? serialized : Buffer.from(serialized);
     return {
-      transaction: transaction.serialize({
-        requireAllSignatures: false,
-        verifySignatures: false,
-      }).toString("base64"),
+      transaction: buffer.toString("base64"),
       blockhash: blockhash.blockhash,
       lastValidBlockHeight: blockhash.lastValidBlockHeight,
       transactionVersion: "legacy",
