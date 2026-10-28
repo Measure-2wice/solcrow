@@ -57,8 +57,8 @@ test("service builds unsigned make, take, and refund transactions from escrow st
   const escrowData = Buffer.alloc(82);
   escrowData[0] = idl.accounts[0].discriminator[0];
   escrowData.writeBigUInt64LE(seed, 1);
-  maker.toBuffer().copy(escrowData, 9);
-  mint.toBuffer().copy(escrowData, 41);
+  Buffer.from(maker.toBytes()).copy(escrowData, 9);
+  Buffer.from(mint.toBytes()).copy(escrowData, 41);
   escrowData.writeBigUInt64LE(1_000_000n, 73);
   escrowData[81] = 255;
 

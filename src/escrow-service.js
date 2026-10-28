@@ -1,43 +1,5 @@
 import { readFileSync } from "node:fs";
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
-import { getProgramDerivedAddress } from "@solana/addresses";
-import * as kit from "@solana/kit";
-import { address } from "@solana/kit";
-import * as kitAddresses from "@solana/addresses";
-import * as kitKeys from "@solana/keys";
-import { createSolanaRpc } from "@solana/rpc";
-
-// Patch Transaction.from to normalize instruction data to Buffer
-if (Transaction && typeof Transaction.from === "function") {
-  const origFrom = Transaction.from;
-  Transaction.from = function (buffer) {
-    const tx = origFrom.call(this, buffer);
-    if (tx && Array.isArray(tx.instructions)) {
-      for (const ix of tx.instructions) {
-        if (ix && ix.data && !(Buffer.isBuffer(ix.data))) {
-          try {
-            ix.data = Buffer.from(ix.data);
-          } catch {}
-        }
-      }
-    }
-    return tx;
-  };
-}
-
-if (typeof PublicKey !== "undefined" && PublicKey.prototype) {
-  if (typeof PublicKey.prototype.toBuffer !== "function" && typeof PublicKey.prototype.toBytes === "function") {
-    PublicKey.prototype.toBuffer = function () {
-      return Buffer.from(this.toBytes());
-    };
-  }
-  if (typeof PublicKey.prototype.toBytes !== "function" && typeof PublicKey.prototype.toBuffer === "function") {
-    PublicKey.prototype.toBytes = function () {
-      const buf = this.toBuffer();
-      return new Uint8Array(buf);
-    };
-  }
-}
 
 const idl = JSON.parse(readFileSync(new URL("../idls/anchor_escrow.json", import.meta.url), "utf8"));
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
@@ -269,7 +231,8 @@ export class EscrowService {
     if (!account.owner.equals(this.programId)) {
       throw new HttpError(400, "Escrow account is not owned by this program");
     }
-    if (account.data.length !== ESCROW_ACCOUNT_SIZE || account.data[0] !== idl.accounts[0].discriminator[0]) {
+    const expectedDiscriminator = Buffer.from(idl.accounts[0].discriminator);
+    if (account.data.length !== ESCROW_ACCOUNT_SIZE || !account.data.subarray(0, expectedDiscriminator.length).equals(expectedDiscriminator)) {
       throw new HttpError(400, "Escrow account data does not match the program IDL");
     }
 
