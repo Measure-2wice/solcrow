@@ -6,12 +6,8 @@ package_manager = "yarn"
 resolution = true
 skip-lint = false
 
-[workspace]
-idls = "idls"
-types = "types"
-
 [programs.localnet]
-anchor_escrow = "38es8xcEeKMcwoGjG8iapa5JN7rs9zCCGKLRtUo9uKmS"
+anchor_escrow = "kWEt7FsG2q3uhWYKadycaobTVK4AtqBkxQxiTRvBzUF"
 
 [provider]
 cluster = "localnet"
