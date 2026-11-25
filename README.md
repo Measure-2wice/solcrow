@@ -27,7 +27,7 @@ Maker deposits token A  →  vault (PDA-owned)
 ## Program ID
 
 ```
-38es8xcEeKMcwoGjG8iapa5JN7rs9zCCGKLRtUo9uKmS
+kWEt7FsG2q3uhWYKadycaobTVK4AtqBkxQxiTRvBzUF
 ```
 
 ## Prerequisites

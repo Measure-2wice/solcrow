@@ -4,6 +4,17 @@ import { Connection, Keypair, Transaction } from "@solana/web3.js";
 
 const responseFile = process.argv[2] ?? "make-response.json";
 const response = JSON.parse(readFileSync(responseFile, "utf8"));
+const idl = JSON.parse(readFileSync(new URL("./idls/anchor_escrow.json", import.meta.url), "utf8"));
+const transaction = Transaction.from(
+  Buffer.from(response.transaction, "base64"),
+);
+
+if (!transaction.instructions.some(({ programId }) => programId.toBase58() === idl.address)) {
+  throw new Error(
+    `Transaction does not target configured escrow program ${idl.address}; rebuild the response`,
+  );
+}
+
 const secret = Uint8Array.from(
   JSON.parse(readFileSync(`${process.env.HOME}/.config/solana/id.json`, "utf8")),
 );
@@ -14,9 +25,6 @@ if (maker.publicKey.toBase58() !== "4SusPAMEFc2Dom75zPqzNhf3XAQYeJCYXw1Fd1TMENkK
 }
 
 const connection = new Connection("http://localhost:8899", "confirmed");
-const transaction = Transaction.from(
-  Buffer.from(response.transaction, "base64"),
-);
 
 // Use one fresh blockhash for both submission and confirmation.
 const latest = await connection.getLatestBlockhash("confirmed");

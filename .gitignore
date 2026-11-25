@@ -27,6 +27,7 @@
 *.json
 !package.json
 !tsconfig.json
+!idls/anchor_escrow.json
 
 # Misc
 .env

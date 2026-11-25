@@ -18,8 +18,8 @@ import {
 const maker = new PublicKey("11111111111111111111111111111111");
 const mint = new PublicKey("So11111111111111111111111111111111111111112");
 const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const programId = new PublicKey("38es8xcEeKMcwoGjG8iapa5JN7rs9zCCGKLRtUo9uKmS");
 const idl = JSON.parse(readFileSync(new URL("../idls/anchor_escrow.json", import.meta.url), "utf8"));
+const programId = new PublicKey(idl.address);
 const blockhash = PublicKey.default.toBase58();
 // Kit-compatible addresses
 const makerAddress = address(maker.toBase58());
@@ -88,6 +88,7 @@ test("service builds unsigned make, take, and refund transactions from escrow st
   assert.equal(make.transactionVersion, "legacy");
   assert.equal(make.lastValidBlockHeight, 999);
   assert.equal(makeTransaction.feePayer.toBase58(), maker.toBase58());
+  assert.equal(makeTransaction.instructions[0].programId.toBase58(), programId.toBase58());
   assert.deepEqual(
     [...makeData.subarray(0, 8)],
     idl.instructions.find(({ name }) => name === "make").discriminator,
