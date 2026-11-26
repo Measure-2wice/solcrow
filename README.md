@@ -74,9 +74,11 @@ Set `SOLANA_RPC_URL` explicitly to the intended cluster. The service listens on 
 | `POST` | `/escrows/refund/transaction` | `{ "maker": "<pubkey>", "seed": "42" }` |
 
 Amounts and seeds are raw integer token units and should be sent as decimal strings to
-preserve the full `u64` range. The transaction response contains `transaction` (base64),
-`blockhash`, `lastValidBlockHeight`, and `transactionVersion`. The maker/taker named in
-the request must sign with their wallet; the service only builds the transaction.
+preserve the full `u64` range. A make transaction idempotently creates the maker's associated
+token account if it is missing; the maker pays its rent and must still hold enough tokens for
+the deposit. The transaction response contains `transaction` (base64), `blockhash`,
+`lastValidBlockHeight`, and `transactionVersion`. The maker/taker named in the request must
+sign with their wallet; the service only builds the transaction.
 
 Run the JavaScript service tests with:
 

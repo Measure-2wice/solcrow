@@ -197,6 +197,21 @@ function accountMeta(pubkey, isSigner = false, isWritable = false) {
   return { pubkey, isSigner, isWritable };
 }
 
+function createIdempotentAssociatedTokenAccountInstruction(payer, associatedToken, owner, mint, tokenProgram) {
+  return new TransactionInstruction({
+    programId: ASSOCIATED_TOKEN_PROGRAM_ID,
+    keys: [
+      accountMeta(payer, true, true),
+      accountMeta(associatedToken, false, true),
+      accountMeta(owner),
+      accountMeta(mint),
+      accountMeta(SystemProgram.programId),
+      accountMeta(tokenProgram),
+    ],
+    data: Buffer.from([1]),
+  });
+}
+
 export class EscrowService {
   constructor(connection) {
     if (!(connection instanceof Connection)) {
@@ -252,11 +267,11 @@ export class EscrowService {
     };
   }
 
-  async #unsignedTransaction(instruction, feePayer, blockhash) {
+  async #unsignedTransaction(instructions, feePayer, blockhash) {
     const transaction = new Transaction({
       feePayer,
       recentBlockhash: blockhash.blockhash,
-    }).add(instruction);
+    }).add(...instructions);
     const serialized = await transaction.serialize({
       requireAllSignatures: false,
       verifySignatures: false,
@@ -306,18 +321,26 @@ export class EscrowService {
     }
 
     const tokenProgram = await this.#mintTokenProgram(mint);
+    const makerAta = deriveAssociatedTokenAddress(maker, mint, tokenProgram);
+    const createMakerAta = createIdempotentAssociatedTokenAccountInstruction(
+      maker,
+      makerAta,
+      maker,
+      mint,
+      tokenProgram,
+    );
     const instruction = escrowInstruction("make", [
       accountMeta(maker, true, true),
       accountMeta(escrow, false, true),
       accountMeta(mint),
-      accountMeta(deriveAssociatedTokenAddress(maker, mint, tokenProgram), false, true),
+      accountMeta(makerAta, false, true),
       accountMeta(deriveAssociatedTokenAddress(escrow, mint, tokenProgram), false, true),
       accountMeta(ASSOCIATED_TOKEN_PROGRAM_ID),
       accountMeta(tokenProgram),
       accountMeta(SystemProgram.programId),
     ], [u64Bytes(seed), u64Bytes(amount)]);
 
-    return this.#unsignedTransaction(instruction, maker, await this.#blockhash());
+    return this.#unsignedTransaction([createMakerAta, instruction], maker, await this.#blockhash());
   }
 
   async buildTakeTransaction({ maker: makerInput, taker: takerInput, seed: seedInput }) {
@@ -337,7 +360,7 @@ export class EscrowService {
       accountMeta(tokenProgram),
       accountMeta(SystemProgram.programId),
     ]);
-    return this.#unsignedTransaction(instruction, taker, await this.#blockhash());
+    return this.#unsignedTransaction([instruction], taker, await this.#blockhash());
   }
 
   async buildRefundTransaction({ maker: makerInput, seed: seedInput }) {
@@ -355,6 +378,6 @@ export class EscrowService {
       accountMeta(tokenProgram),
       accountMeta(SystemProgram.programId),
     ]);
-    return this.#unsignedTransaction(instruction, maker, await this.#blockhash());
+    return this.#unsignedTransaction([instruction], maker, await this.#blockhash());
   }
 }

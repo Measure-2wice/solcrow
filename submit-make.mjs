@@ -24,7 +24,8 @@ if (maker.publicKey.toBase58() !== "4SusPAMEFc2Dom75zPqzNhf3XAQYeJCYXw1Fd1TMENkK
   throw new Error("Configured keypair is not the requested maker");
 }
 
-const connection = new Connection("http://localhost:8899", "confirmed");
+const rpcUrl = process.env.RPC_URL ?? "http://localhost:8899";
+const connection = new Connection(rpcUrl, "confirmed");
 
 // Use one fresh blockhash for both submission and confirmation.
 const latest = await connection.getLatestBlockhash("confirmed");

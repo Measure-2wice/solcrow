@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { once } from "node:events";
 import test from "node:test";
 import { createServer } from "node:http";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import * as kit from "@solana/kit";
 import { address } from "@solana/kit";
 import { createApp } from "../src/app.js";
@@ -84,18 +84,36 @@ test("service builds unsigned make, take, and refund transactions from escrow st
     amount: "1000000",
   });
   let makeTransaction = Transaction.from(Buffer.from(make.transaction, "base64"));
-  const makeData = Buffer.isBuffer(makeTransaction.instructions[0].data) ? makeTransaction.instructions[0].data : Buffer.from(makeTransaction.instructions[0].data);
+  const createAtaInstruction = makeTransaction.instructions[0];
+  const makeInstruction = makeTransaction.instructions[1];
+  const makeData = Buffer.isBuffer(makeInstruction.data) ? makeInstruction.data : Buffer.from(makeInstruction.data);
   assert.equal(make.transactionVersion, "legacy");
   assert.equal(make.lastValidBlockHeight, 999);
   assert.equal(makeTransaction.feePayer.toBase58(), maker.toBase58());
-  assert.equal(makeTransaction.instructions[0].programId.toBase58(), programId.toBase58());
+  assert.equal(makeTransaction.instructions.length, 2);
+  assert.equal(
+    createAtaInstruction.programId.toBase58(),
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  );
+  assert.deepEqual([...createAtaInstruction.data], [1]);
+  assert.equal(createAtaInstruction.keys.length, 6);
+  assert.equal(createAtaInstruction.keys[0].pubkey.toBase58(), maker.toBase58());
+  assert.equal(
+    createAtaInstruction.keys[1].pubkey.toBase58(),
+    deriveAssociatedTokenAddress(maker, mint, tokenProgram).toBase58(),
+  );
+  assert.equal(createAtaInstruction.keys[2].pubkey.toBase58(), maker.toBase58());
+  assert.equal(createAtaInstruction.keys[3].pubkey.toBase58(), mint.toBase58());
+  assert.equal(createAtaInstruction.keys[4].pubkey.toBase58(), SystemProgram.programId.toBase58());
+  assert.equal(createAtaInstruction.keys[5].pubkey.toBase58(), tokenProgram.toBase58());
+  assert.equal(makeInstruction.programId.toBase58(), programId.toBase58());
   assert.deepEqual(
     [...makeData.subarray(0, 8)],
     idl.instructions.find(({ name }) => name === "make").discriminator,
   );
   assert.equal(makeData.readBigUInt64LE(8), 7n);
   assert.equal(makeData.readBigUInt64LE(16), 1_000_000n);
-  assert.equal(makeTransaction.instructions[0].keys.length, 8);
+  assert.equal(makeInstruction.keys.length, 8);
 
   const take = await service.buildTakeTransaction({
     maker: maker.toBase58(),

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# % RPC_URL=https://api.devnet.solana.com MINT=2aD5iL9RwRZkMY9dXFK6H9hMLYKLeQDJ72eBa2ycFktb ./test-script.sh
+
 RPC_URL="${RPC_URL:-http://127.0.0.1:8899}"
 API_URL="${API_URL:-http://localhost:3000}"
 KEYPAIR="${KEYPAIR:-$HOME/.config/solana/id.json}"
@@ -58,4 +60,4 @@ curl --fail --silent --show-error \
   }"
 
 # Simulates, signs with id.json, submits, and confirms the transaction.
-node submit-make.mjs "$RESPONSE_FILE"
+RPC_URL="$RPC_URL" node submit-make.mjs "$RESPONSE_FILE"
